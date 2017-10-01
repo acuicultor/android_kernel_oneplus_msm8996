@@ -868,7 +868,64 @@ static int __f2fs_issue_discard_async(struct f2fs_sb_info *sbi,
 		__add_discard_cmd(sbi, bio, lblkstart, blklen);
 		wake_up(&SM_I(sbi)->dcc_info->discard_wait_queue);
 	}
-	return err;
+}
+
+/* This comes from f2fs_put_super and f2fs_trim_fs */
+void f2fs_wait_discard_bios(struct f2fs_sb_info *sbi, bool umount)
+{
+	__issue_discard_cmd(sbi, false);
+	__drop_discard_cmd(sbi);
+	__wait_discard_cmd(sbi, !umount);
+}
+
+static void mark_discard_range_all(struct f2fs_sb_info *sbi)
+{
+	struct discard_cmd_control *dcc = SM_I(sbi)->dcc_info;
+	int i;
+
+	mutex_lock(&dcc->cmd_lock);
+	for (i = 0; i < MAX_PLIST_NUM; i++)
+		dcc->pend_list_tag[i] |= P_TRIM;
+	mutex_unlock(&dcc->cmd_lock);
+}
+
+static int issue_discard_thread(void *data)
+{
+	struct f2fs_sb_info *sbi = data;
+	struct discard_cmd_control *dcc = SM_I(sbi)->dcc_info;
+	wait_queue_head_t *q = &dcc->discard_wait_queue;
+	unsigned int wait_ms = DEF_MIN_DISCARD_ISSUE_TIME;
+	int issued;
+
+	set_freezable();
+
+	do {
+		wait_event_interruptible_timeout(*q,
+				kthread_should_stop() || freezing(current) ||
+				dcc->discard_wake,
+				msecs_to_jiffies(wait_ms));
+		if (try_to_freeze())
+			continue;
+		if (kthread_should_stop())
+			return 0;
+
+		if (dcc->discard_wake)
+			dcc->discard_wake = 0;
+
+		sb_start_intwrite(sbi->sb);
+
+		issued = __issue_discard_cmd(sbi, true);
+		if (issued) {
+			__wait_discard_cmd(sbi, true);
+			wait_ms = DEF_MIN_DISCARD_ISSUE_TIME;
+		} else {
+			wait_ms = DEF_MAX_DISCARD_ISSUE_TIME;
+		}
+
+		sb_end_intwrite(sbi->sb);
+
+	} while (!kthread_should_stop());
+	return 0;
 }
 
 #ifdef CONFIG_BLK_DEV_ZONED
@@ -1771,6 +1828,9 @@ int f2fs_trim_fs(struct f2fs_sb_info *sbi, struct fstrim_range *range)
 
 		schedule();
 	}
+	/* It's time to issue all the filed discards */
+	mark_discard_range_all(sbi);
+	f2fs_wait_discard_bios(sbi, false);
 out:
 	range->len = F2FS_BLK_TO_BYTES(cpc.trimmed);
 	return err;

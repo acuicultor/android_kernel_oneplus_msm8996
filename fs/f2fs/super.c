@@ -774,7 +774,14 @@ static void f2fs_put_super(struct super_block *sb)
 	}
 
 	/* be sure to wait for any on-going discard commands */
-	f2fs_wait_discard_bio(sbi, NULL_ADDR);
+	f2fs_wait_discard_bios(sbi, true);
+
+	if (f2fs_discard_en(sbi) && !sbi->discard_blks) {
+		struct cp_control cpc = {
+			.reason = CP_UMOUNT | CP_TRIMMED,
+		};
+		write_checkpoint(sbi, &cpc);
+	}
 
 	/* write_checkpoint can update stat informaion */
 	f2fs_destroy_stats(sbi);
