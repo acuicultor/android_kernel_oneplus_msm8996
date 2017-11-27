@@ -16,7 +16,7 @@ DEFCONFIG="radioactive_defconfig"
 KERNEL="Image.gz-dtb"
 
 # Caesium Kernel Details
-KERNEL_NAME="~Radioactive-sultanized"
+KERNEL_NAME="~Radioactive-Reborn"
 INCREMENTAL_VERSION="V1.0.0"
 export LOCALVERSION="${KERNEL_NAME}-${INCREMENTAL_VERSION}"
 DEVICE="oneplus3-3T"
