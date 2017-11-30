@@ -15,9 +15,9 @@ THREAD="-j$(nproc --all)"
 DEFCONFIG="radioactive_defconfig"
 KERNEL="Image.gz-dtb"
 
-# Caesium Kernel Details
+# Radioactive Kernel Details
 KERNEL_NAME="~Radioactive-Reborn"
-INCREMENTAL_VERSION="V1.0.2"
+INCREMENTAL_VERSION="V1.0.3"
 export LOCALVERSION="${KERNEL_NAME}-${INCREMENTAL_VERSION}"
 DEVICE="oneplus3-3T"
 FINAL_VER="${KERNEL_NAME}-${DEVICE}-${INCREMENTAL_VERSION}"
