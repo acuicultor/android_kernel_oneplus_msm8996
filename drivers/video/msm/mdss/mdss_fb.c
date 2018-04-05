@@ -1561,9 +1561,6 @@ void mdss_fb_set_backlight(struct msm_fb_data_type *mfd, u32 bkl_lvl)
 		mfd->unset_bl_level = U32_MAX;
 	}
 
-	if (mdss_fb_is_power_on_interactive(mfd) && mfd->bl_level)
-		mfd->unblank_bl_level = mfd->bl_level;
-
 	pdata = dev_get_platdata(&mfd->pdev->dev);
 
 	if ((pdata) && (pdata->set_backlight)) {
@@ -1818,7 +1815,7 @@ static int mdss_fb_blank_unblank(struct msm_fb_data_type *mfd)
 				mdss_fb_set_backlight(mfd, mfd->calib_mode_bl);
 			else if ((!mfd->panel_info->mipi.post_init_delay) &&
 				(mfd->unset_bl_level != U32_MAX))
-				mdss_fb_set_backlight(mfd, mfd->unblank_bl_level);
+				mdss_fb_set_backlight(mfd, mfd->unset_bl_level);
 
 			/*
 			 * it blocks the backlight update between unblank and
@@ -4355,11 +4352,22 @@ static int mdss_fb_atomic_commit_ioctl(struct fb_info *info,
 	struct mdp_input_layer __user *input_layer_list;
 	struct mdp_output_layer *output_layer = NULL;
 	struct mdp_output_layer __user *output_layer_user;
+	struct msm_fb_data_type *mfd;
 
 	ret = copy_from_user(&commit, argp, sizeof(struct mdp_layer_commit));
 	if (ret) {
 		pr_err("%s:copy_from_user failed\n", __func__);
 		return ret;
+	}
+
+	mfd = (struct msm_fb_data_type *)info->par;
+	if (!mfd)
+		return -EINVAL;
+
+	if (mfd->panel_info->panel_dead) {
+		pr_debug("early commit return\n");
+		MDSS_XLOG(mfd->panel_info->panel_dead);
+		return 0;
 	}
 
 	output_layer_user = commit.commit_v1.output_layer;

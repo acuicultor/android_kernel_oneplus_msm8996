@@ -1,4 +1,4 @@
-/* Copyright (c) 2014-2016 The Linux Foundation. All rights reserved.
+/* Copyright (c) 2014-2017 The Linux Foundation. All rights reserved.
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 2 and
@@ -3118,9 +3118,8 @@ static int set_usb_current_limit_vote_cb(struct device *dev,
 
 	effective_id = get_effective_client_id_locked(chip->usb_icl_votable);
 
-	/* disable parallel charging if HVDCP is voting for 300mA */
-	if (effective_id == HVDCP_ICL_VOTER)
-		smbchg_parallel_usb_disable(chip);
+	/* Disable parallel charger if ICL is changed */
+	smbchg_parallel_usb_disable(chip);
 
 	if (chip->parallel.current_max_ma == 0) {
 		rc = smbchg_set_usb_current_max(chip, icl_ma);
@@ -6413,6 +6412,8 @@ static enum power_supply_property smbchg_battery_properties[] = {
 	POWER_SUPPLY_PROP_RESTRICTED_CHARGING,
 	POWER_SUPPLY_PROP_ALLOW_HVDCP3,
 	POWER_SUPPLY_PROP_MAX_PULSE_ALLOWED,
+	POWER_SUPPLY_PROP_CHARGE_FULL_DESIGN,
+	POWER_SUPPLY_PROP_CYCLE_COUNT
 };
 
 static int smbchg_battery_set_property(struct power_supply *psy,
@@ -6660,6 +6661,10 @@ static int smbchg_battery_get_property(struct power_supply *psy,
 		break;
 	case POWER_SUPPLY_PROP_MAX_PULSE_ALLOWED:
 		val->intval = chip->max_pulse_allowed;
+		break;
+	case POWER_SUPPLY_PROP_CHARGE_FULL_DESIGN:
+	case POWER_SUPPLY_PROP_CYCLE_COUNT:
+		get_property_from_fg(chip, prop, &val->intval);
 		break;
 	default:
 		return -EINVAL;

@@ -17,7 +17,7 @@ KERNEL="Image.gz-dtb"
 
 # Radioactive Kernel Details
 KERNEL_NAME="~Radioactive-Reborn"
-INCREMENTAL_VERSION="V1.0.8"
+INCREMENTAL_VERSION="V1.0.9"
 export LOCALVERSION="${KERNEL_NAME}-${INCREMENTAL_VERSION}"
 DEVICE="oneplus3-3T"
 FINAL_VER="${KERNEL_NAME}-${DEVICE}-${INCREMENTAL_VERSION}"
@@ -31,7 +31,7 @@ export KBUILD_BUILD_HOST=NuclearPowerPlant
 # Paths
 WORKING_DIR=$(pwd)
 ANYKERNEL_DIR="${HOME}/android/kernels/AnyKernel2"
-TOOLCHAIN_DIR="${HOME}/Android/toolchains/aarch64-linux-gnu-kernel-linaro-7.x/"
+TOOLCHAIN_DIR="${HOME}/Android/toolchains/aarch64-linux-gnu/"
 REPACK_DIR="${ANYKERNEL_DIR}"
 OUT_DIR="${WORKING_DIR}/out/"
 ZIP_MOVE="${WORKING_DIR}/zips/"

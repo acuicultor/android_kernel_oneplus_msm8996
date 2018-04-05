@@ -1,7 +1,7 @@
 /*
  * drivers/thermal/msm_thermal_simple.c
  *
- * Copyright (C) 2014-2017, Sultanxda <sultanxda@gmail.com>
+ * Copyright (C) 2014-2018, Sultanxda <sultanxda@gmail.com>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 2 and
@@ -32,13 +32,12 @@
  * big CPUs.
  */
 #define LITTLE_CPU_MASK (CPU_MASK(0) | CPU_MASK(1))
-#define BIG_CPU_MASK    (CPU_MASK(2) | CPU_MASK(3))
 
 #define UNTHROTTLE_ZONE (-1)
 
 #define DEFAULT_SAMPLING_MS 3000
 
-/* Max possible is currently 99 (two digits) */
+/* Max possible is currently 100 (0-99 => two digits) */
 #define NR_THERMAL_ZONES 16
 
 struct thermal_zone_sysfs {
@@ -219,7 +218,7 @@ static int do_cpu_throttle(struct notifier_block *nb,
 
 static struct notifier_block cpu_throttle_nb = {
 	.notifier_call = do_cpu_throttle,
-	.priority      = -INT_MAX,
+	.priority      = INT_MIN,
 };
 
 static void update_online_cpu_policy(void)
@@ -458,7 +457,7 @@ static int sysfs_zone_attr_init(struct thermal_policy *t)
 	return 0;
 
 free_name:
-	for (i--; i >= 0; i--)
+	while (i--)
 		kfree(t->zfs.dev_attr[i].attr.name);
 	return -ENOMEM;
 }
